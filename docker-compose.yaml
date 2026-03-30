@@ -1,0 +1,68 @@
+services:
+
+  wg-easy:
+    container_name: wg-easy
+    image: ghcr.io/wg-easy/wg-easy:15
+    restart: on-failure
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wg-easy.rule=Host(`${HOSTNAME}`)"
+      - "traefik.http.routers.wg-easy.entrypoints=websecure"
+      - "traefik.http.routers.wg-easy.service=wg-easy"
+      - "traefik.http.services.wg-easy.loadbalancer.server.port=51821"
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv6.conf.all.forwarding=1
+      - net.ipv6.conf.default.forwarding=1
+    networks:
+      wg-easy:
+        ipv4_address: 10.42.42.42
+        ipv6_address: fdcc:ad94:bacf:61a3::2a
+      traefik: {}
+    ports:
+      - '51820:51820/udp'
+    volumes:
+      - etc_wireguard:/etc/wireguard
+      - /lib/modules:/lib/modules:ro
+
+  traefik:
+    container_name: traefik
+    image: traefik:3.6.0
+    restart: on-failure
+    networks:
+      - traefik
+    ports:
+      - '80:80/tcp'
+      - '80:80/udp'
+      - '443:443/tcp'
+      - '443:443/udp'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yaml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yaml:/etc/traefik/dynamic.yml:ro
+      - ./traefik/acme.json:/etc/traefik/acme.json
+
+networks:
+
+  wg-easy:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.42.42.0/24
+        - subnet: fdcc:ad94:bacf:61a3::/64
+    name: wg-easy
+
+  traefik:
+    driver: bridge
+    enable_ipv6: true
+    name: traefik
+
+volumes:
+  etc_wireguard:

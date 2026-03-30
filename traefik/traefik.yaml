@@ -1,0 +1,43 @@
+api:
+  basepath: /traefik
+  dashboard: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: ${EMAIL}
+      storage: /etc/traefik/acme.json
+      httpChallenge:
+        entryPoint: web
+
+entryPoints:
+  web:
+    address: ':80/tcp'
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ':443/tcp'
+    http:
+      middlewares:
+        - compress@file
+        - hsts@file
+      tls:
+        certResolver: letsencrypt
+    http3: {}
+
+log:
+  level: INFO
+
+providers:
+  docker:
+    watch: true
+    network: traefik
+    exposedByDefault: false
+  file:
+    filename: /etc/traefik/dynamic.yml
+
+serversTransport:
+  insecureSkipVerify: true
