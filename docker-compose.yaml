@@ -9,7 +9,7 @@ services:
       - SYS_MODULE
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wg-easy.rule=Host(`${HOSTNAME}`)"
+      - "traefik.http.routers.wg-easy.rule=Host(`${DOMAIN_NAME:?DOMAIN_NAME is required}`)"
       - "traefik.http.routers.wg-easy.entrypoints=websecure"
       - "traefik.http.routers.wg-easy.service=wg-easy"
       - "traefik.http.services.wg-easy.loadbalancer.server.port=51821"
@@ -32,6 +32,8 @@ services:
 
   traefik:
     container_name: traefik
+    command:
+      - --certificatesResolvers.letsencrypt.acme.email=${ACME_EMAIL:?ACME_EMAIL is required}
     image: traefik:3.6.0
     restart: on-failure
     networks:
